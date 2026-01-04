@@ -20,16 +20,22 @@ Newly created environments automatically open in VS Code but this behavior can b
 
 ### Commands
 
-Create a new environment
+Create and open a new environment
 
 ```sh
-scratch new <name>
+scratch new <name> [--no-open]
 ```
 
 List environments
 
 ```sh
 scratch list
+```
+
+Delete environment by id, name and type or delete all environments
+
+```sh
+scratch delete [flags]
 ```
 
 See `scratch -h` for more information about available commands and flags

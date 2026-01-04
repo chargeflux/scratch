@@ -83,7 +83,7 @@ func (s Scaffolder) Build() error {
 
 	slog.Debug("Checking if output directory already exists")
 	if _, err := os.Stat(s.spec.Path); err == nil {
-		return fmt.Errorf("environment already exists")
+		return fmt.Errorf("environment already exists at location")
 	}
 
 	slog.Debug("Ensuring all folders in output path are created")
