@@ -57,7 +57,7 @@ type NewCmd struct {
 	Name      string   `arg:"" help:"The name of environment" required:""`
 	Type      SpecType `short:"t" help:"The type of environment" default:"python"`
 	Directory string   `short:"d" help:"The parent output directory"`
-	Open      string   `help:"Open folder in program" default:"code"`
+	Open      string   `short:"o" help:"Open folder in program" default:"code"`
 	NoOpen    bool     `help:"Don't open folder"`
 }
 
@@ -165,13 +165,33 @@ func (l ListCmd) Run(ctx *CLIContext) error {
 	return store.ListFunc(listFunc)
 }
 
+// Flags that identify an environment
+type IdentifyFlags struct {
+	ID   string   `help:"The ID of environment"`
+	Name string   `short:"n" help:"The name of environment"`
+	Type SpecType `short:"t" help:"The type of environment" default:"python"`
+}
+
+func (f IdentifyFlags) Validate() error {
+	if f.ID != "" {
+		if f.Name != "" {
+			return fmt.Errorf("specify either --id OR --name, not both")
+		}
+		return nil
+	}
+
+	if f.Name != "" {
+		return nil
+	}
+
+	return fmt.Errorf("must specify --id or --name")
+}
+
 // DeleteCmd represents the command to delete an environment or environments
 type DeleteCmd struct {
-	ID    string `help:"The ID of environment"`
-	Name  string `short:"n" help:"The name of environment"`
-	Type  string `short:"t" help:"The type of environment" default:"python"`
-	Force bool   `short:"f" help:"Delete without confirmation"`
-	All   bool   `help:"Delete all environments"`
+	IdentifyFlags
+	Force bool `short:"f" help:"Delete without confirmation"`
+	All   bool `help:"Delete all environments"`
 }
 
 // Validate checks the combination of flags
@@ -183,15 +203,8 @@ func (d DeleteCmd) Validate() error {
 		return nil
 	}
 
-	if d.ID != "" {
-		if d.Name != "" {
-			return fmt.Errorf("specify either --id OR --name, not both")
-		}
-		return nil
-	}
-
-	if d.Name != "" {
-		return nil
+	if err := d.IdentifyFlags.Validate(); err != nil {
+		return err
 	}
 
 	return fmt.Errorf("must specify --id, --name, or --all")
@@ -273,10 +286,49 @@ func (d DeleteCmd) Run(ctx *CLIContext) error {
 	return nil
 }
 
+type OpenCmd struct {
+	IdentifyFlags
+	Open string `short:"o" help:"Open environment in program" default:"code"`
+}
+
+func (o OpenCmd) Validate() error {
+	return o.IdentifyFlags.Validate()
+}
+
+// Run opens environment by key or name and type
+func (o OpenCmd) Run(ctx *CLIContext) error {
+	store, err := ctx.Store()
+	if err != nil {
+		return err
+	}
+
+	key := o.ID
+	if key == "" {
+		key = SpecID(SpecType(o.Type), o.Name)
+	}
+
+	data, err := store.Get(key)
+	if err != nil {
+		return fmt.Errorf("get environment: %w", err)
+	}
+
+	spec, err := LoadSpec(data)
+	if err != nil {
+		return fmt.Errorf("load spec: %w", err)
+	}
+
+	if err := OpenFolder(o.Open, spec.Path); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CLI describes available commands and flags
 var CLI struct {
 	Verbose bool      `short:"v" help:"Enable verbose logging"`
 	New     NewCmd    `cmd:"" help:"Create a new environment"`
 	List    ListCmd   `cmd:"" help:"List environments"`
 	Delete  DeleteCmd `cmd:"" help:"Delete environments"`
+	Open    OpenCmd   `cmd:"" help:"Open environment"`
 }

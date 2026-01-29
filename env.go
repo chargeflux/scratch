@@ -17,6 +17,10 @@ var (
 	PythonSpec SpecType = "python"
 )
 
+func SpecID(t SpecType, name string) string {
+	return fmt.Sprintf("%s:%s", t, name)
+}
+
 // Spec defines the environment
 type Spec struct {
 	Name string
@@ -46,7 +50,7 @@ func (s Spec) String() string {
 
 // ID returns a unique identifier for the spec
 func (s Spec) ID() string {
-	return fmt.Sprintf("%s:%s", s.Type, s.Name)
+	return SpecID(s.Type, s.Name)
 }
 
 // Exists checks if the environment created by the spec exists
